@@ -1,0 +1,62 @@
+# SPEC — GEO·ARC v0.1
+
+Derivada del handoff GEO·ARC v1.2 (prototipo previo en SVG/D3, sin código disponible) y de las decisiones del 2026-10-08.
+
+## Objetivo
+
+Que un estudiante de Arquitectura, partiendo de **un sitio real** (Temuco, cualquier lugar de Chile o del mundo),
+entienda **cómo la norma y la topografía construyen la envolvente edificable**, y pueda llevarse el resultado a CAD/BIM.
+
+Principio docente: **transparencia**. La app no entrega una caja negra; muestra qué restricción manda en cada punto
+y desde dónde nace cada rasante.
+
+## Flujo (5 pasos)
+
+| Paso | Qué hace | Estado v0.1 |
+|---|---|---|
+| 1. Sitio | Búsqueda por dirección (Nominatim) o «lat, lon», o clic en mapa. Marco UTM automático. | Hecho |
+| 2. Terreno | DEM: Copernicus GLO-30 (DSM), Terrarium/SRTM, ladera sintética. Curvas con equidistancia y maestras. Metadatos y advertencias (DSM, precisión aparente). | Hecho (CORS por verificar) |
+| 3. Lote | Dibujo en planta sobre el mapa (clic/doble clic) o lote de ejemplo. | Hecho |
+| 4. Norma | Perfil OGUC Chile / Personalizado. Altura máxima. Por lado: rol (deslinde, frente, sin rasante), ángulo, arranque, distanciamiento, eje de calle. | Hecho (valores OGUC por verificar) |
+| 5. Resultados | Superficie, huella, volumen, altura máx.; reparto de qué restricción gobierna; 3D con planos de rasante; DXF (UTM) y PNG; guardar/abrir `.geoarc`. | Hecho |
+
+## Correspondencia con el handoff v1.2
+
+| Handoff v1.2 | v0.1 |
+|---|---|
+| Extracción de topografía desde OSM | Reemplazado: la topografía viene de DEM globales (OSM no tiene cotas). |
+| Importación PLY/FBX | Backlog (prioridad media) — se priorizará DXF de levantamiento. |
+| Vista planta + isométrica SVG | Reemplazado: mapa real (MapLibre) + 3D real (Three.js). |
+| Panel OGUC bloques A/B/C con tooltips | Parcial: perfil + parámetros por lado. Tooltips/bloques en backlog. |
+| Autoselección de grupo normativo por latitud | Descartado (error conceptual): debe ser por región administrativa → backlog. |
+| Volumen extruido + `insetPolygonBisector` | Reemplazado por la envolvente como campo de alturas (soporta distanciamientos distintos por lado y pendiente). |
+| Arrastre de volúmenes | Backlog (volumen propuesto vs envolvente). |
+| Sombras astronómicas (Modo Solar) | Backlog — usar `suncalc`. |
+| `.geoarc` | Hecho (JSON v1, lote en lon/lat). |
+| Bug del dibujo libre | Resuelto por diseño (dibujo en coordenadas geográficas del mapa) + test de regresión `e2e/dibujo.spec.ts`. |
+| Módulo 2 (rasantes reales por fachada) | Hecho en esencia: rasante por lado, desde la cota natural del deslinde, con arranque. |
+| Módulo 3 / Feature C (sombras comparativas, reactivas) | Backlog. |
+
+## Backlog priorizado
+
+**Alta**
+1. Verificar en navegador real el acceso CORS a Copernicus y Terrarium; si falla, proxy liviano (Cloudflare Worker) documentado.
+2. Perfil OGUC verificado por Chris: tabla de ángulos por región, arranque, distanciamientos, regla sobre 10,5 m (si aplica). Tests que lo fijen.
+3. Asignación de región por point-in-polygon (límites regionales oficiales) en vez de manual.
+4. Importar levantamiento topográfico DXF (curvas/puntos con cota → TIN → grilla).
+
+**Media**
+5. Volumen propuesto (dibujado o importado) vs envolvente, con verificación visual de excesos.
+6. Sombras con `suncalc`: envolvente vs volumen propuesto en fechas/horas definidas por norma.
+7. FABDEM (DTM) pre-procesado solo para Chile, alojado como COG estático (licencia no comercial: uso docente).
+8. Envolvente como malla suave (superficie + faldones) en vez de columnas; cálculo en Web Worker.
+9. Exportar a Revit (Toposolid desde CSV de puntos) e IFC 4.3 (IfcSite).
+
+**Baja**
+10. Code-splitting de la vista 3D (bundle actual ~2,4 MB).
+11. Modo “ejercicio” para docentes: escena precargada + preguntas.
+12. Importar nubes/mallas de fotogrametría propia (PLY).
+
+## Fuera de alcance v0.1
+
+Validez legal de los resultados (es docencia); cálculo de constructibilidad/ocupación de suelo del PRC; edificación continua.
