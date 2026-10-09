@@ -40,4 +40,45 @@
 
 ### Pendientes abiertos
 - Verificar CORS de Copernicus y Terrarium en navegador real (el entorno de desarrollo bloqueó la prueba).
+  → Resuelto el 2026-10-09 (ver abajo).
+- Chris: fijar valores OGUC verificados.
+
+## 2026-10-09 · Publicación y verificación de CORS
+
+### Publicación
+- Repo público: https://github.com/Chris-Fierro/geoarc
+- GitHub Pages con GitHub Actions como fuente (`build_type=workflow`): https://chris-fierro.github.io/geoarc/
+
+### CORS de las fuentes de elevación
+Verificado con `curl` desde la red de Chris y con `fetch()` en navegador real (Chromium) sobre el sitio publicado.
+Origin: `https://chris-fierro.github.io`.
+
+| Fuente | Petición | Estado | `Access-Control-Allow-Origin` |
+|---|---|---|---|
+| Copernicus GLO-30 (`copernicus-dem-30m.s3.amazonaws.com`) | GET/HEAD con `Range: bytes=0-1023` | 206 | **ausente** |
+| Copernicus GLO-30 | OPTIONS (preflight) | **403** — `CORSResponse: CORS is not enabled for this bucket.` | — |
+| Copernicus GLO-30, endpoint regional (`…s3.eu-central-1.amazonaws.com`) | GET / OPTIONS | 206 / 403, mismo mensaje | ausente |
+| Copernicus GLO-30 | `fetch()` en navegador | **bloqueado** — `No 'Access-Control-Allow-Origin' header is present` | — |
+| Terrarium (`s3.amazonaws.com/elevation-tiles-prod`) | GET | 200 | `*` (métodos: GET) |
+| Terrarium | HEAD | 200 | ausente (la regla CORS del bucket cubre solo GET; la app usa GET) |
+| Terrarium | OPTIONS (preflight) | 200 | `*` |
+| Terrarium | `fetch()` en navegador | 200, 38 032 bytes | — |
+
+### Conclusiones
+- **Terrarium funciona desde el navegador.** Flujo probado en producción (Temuco): curvas, metadatos y advertencias OK.
+- **Copernicus NO funciona desde el navegador.** El bucket entrega los bytes (curl recibe 206), pero no tiene CORS
+  habilitado y el navegador bloquea la respuesta. No depende del origen ni del endpoint; falla igual en `localhost`.
+  No es un problema del despliegue.
+- La app falla con gracia: `loadDem` muestra «No se pudo cargar el terreno (copernicus). Failed to fetch. Prueba otra
+  fuente…». Pero Copernicus es la fuente **por defecto** (`App.tsx`), así que el primer intento del estudiante falla.
+
+### Decisión (Chris)
+- Publicar tal cual y solo documentar. Quedan por decidir:
+  - Cambiar la fuente por defecto a Terrarium.
+  - Proxy liviano para Copernicus (p. ej. Cloudflare Worker que reenvíe `Range` y agregue CORS). Por la regla 4 de
+    `CLAUDE.md`, se documenta aquí antes de implementarlo.
+
+### Pendientes abiertos
+- Decidir fuente por defecto y proxy de Copernicus (arriba).
+- Actualizar la nota de CORS en `CLAUDE.md` (Trampas conocidas) y el estado del paso 2 en `SPEC.md`.
 - Chris: fijar valores OGUC verificados.
